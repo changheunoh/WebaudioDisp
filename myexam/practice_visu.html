@@ -1,0 +1,120 @@
+<!doctype html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title> Hello, Sample Play from Server</title>
+</head>
+
+
+<body>	
+	
+	<p>Web audio API example: load a sound file and play/stop it on a button click.</p>
+	  <button onclick="loadSound(url)">Load</button>
+	  <button onclick="playSound(myAudioBuffer)">Play</button>
+	  <button onclick="stopSound()">Stop</button>
+	  <audio id="music" src="BrianEno_extract.wav" preload="auto"></audio>
+
+	  	<div>
+	    <canvas id="canvas" width="300" height="200"></canvas>
+		</div>	
+
+	<script>	
+
+	var context = new AudioContext;
+	var myAudioBuffer = null;
+
+	var url = "/Samples/greg_baumont_-_Minimal_french_electro_loop.mp3";
+	
+	var analyser = context.createAnalyser();
+	analyser.fftSize = 2048;
+	var bufferLength, canvas, dataArray, ctx ;
+	var source = null;
+
+  	
+
+	function draw() {
+      canvas = document.getElementById("canvas");
+      if (canvas.getContext) {
+        ctx = canvas.getContext("2d");
+
+        ctx.fillStyle = "rgb(200,0,0)";
+        ctx.fillRect (10, 10, 55, 50);
+
+        ctx.fillStyle = "rgba(0, 0, 200, 0.5)";
+        ctx.fillRect (30, 30, 55, 50);
+      }
+    }
+
+
+	function loadSound(url) {
+	  var request = new XMLHttpRequest();
+	  request.open('GET', url, true);
+	  request.responseType = 'arraybuffer';
+	  request.onload = function() {
+	    alert("sound loaded"); //test
+	    context.decodeAudioData(request.response, function(buffer) {
+	      myAudioBuffer = buffer;
+	      alert("sound decoded"); //test
+	    });
+	  }
+	  request.send();
+
+		//setupDrawingCanvas();
+	 	draw();
+	}
+ 
+	
+	function playSound(anybuffer) {
+	  source = context.createBufferSource();
+	  source.buffer = anybuffer;
+	  source.connect(context.destination);
+	  source.connect(analyser);
+	  
+	  bufferLength = analyser.frequencyBinCount;
+	  dataArray = new Uint8Array(bufferLength);
+	  
+	  
+
+	  source.start();
+
+	  drawing();
+	}
+
+	function drawing() {
+			requestAnimationFrame(drawing);
+			analyser.getByteTimeDomainData(dataArray);
+			ctx.fillStyle = 'rgb(200, 200, 200)';
+      		ctx.fillRect(0, 0, canvas.width, canvas.height);
+      		ctx.lineWidth = 2;
+		      ctx.strokeStyle = 'rgb(0, 0, 0)';
+		      ctx.beginPath();
+		      var sliceWidth = canvas.width * 1.0 / bufferLength;
+      var x = 0;
+      for(var i = 0; i < bufferLength; i++) {
+   
+        var v = dataArray[i] / 128.0;
+        var y = v * canvas.height/2;
+
+        if(i === 0) {
+          ctx.moveTo(x, y);
+        } else {
+          ctx.lineTo(x, y);
+        }
+
+        x += sliceWidth;
+      }
+      ctx.lineTo(canvas.width, canvas.height/2);
+      ctx.stroke();
+    };
+
+ 
+	function stopSound() {
+	  if (source) {
+	    source.stop();
+	  }
+	}
+
+	
+	</script>
+</body>
+</html>
